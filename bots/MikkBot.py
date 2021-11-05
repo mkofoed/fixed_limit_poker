@@ -37,5 +37,4 @@ class MikkBot(BotInterface):
             return Action.RAISE
         if hand_percent > 0.4:
             return Action.CALL
-        else:
-            return Action.FOLD
+        return Action.FOLD
