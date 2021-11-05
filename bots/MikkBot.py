@@ -4,7 +4,7 @@ from typing import Sequence
 
 import utils.handValue
 from bots.BotInterface import BotInterface
-from environment.Constants import Action, Stage
+from environment.Constants import Action, Stage, HandType
 from environment.Observation import Observation
 
 
@@ -27,17 +27,27 @@ class MikkBot(BotInterface):
             If this function takes longer than 1 second, your bot will fold
         """
 
-        raise_weight = 1
-        call_check_weight = 1
-        fold_weight = 1
+
+        stage = observation.stage
+        i_start = observation.myPosition == 0
+        opponent_start = observation.myPosition == 1
+
+        raise_weight = 50
+        call_check_weight = 50
+        fold_weight = 0
 
         i_start = observation.myPosition == 0
         opponent_start = observation.myPosition == 1
 
+        initial_hand_type = utils.handValue.getHandType(observation.myHand)
         initial_hand_percent = 1 - utils.handValue.getHandPercent(observation.myHand)[0]
-        hand_type = utils.handValue.getHandType(observation.myHand)
-        board_type = utils.handValue.getBoardHandType(observation.boardCards)
-        hand_and_board_percent = 1 - utils.handValue.getHandPercent(observation.myHand, observation.boardCards)[0]
+        if stage in [Stage.FLOP, Stage.TURN, Stage.RIVER, Stage.SHOWDOWN]:
+            hand_and_board_type = utils.handValue.getHandType(observation.boardCards)
+            hand_and_board_percent = 1 - utils.handValue.getHandPercent(observation.myHand, observation.boardCards)[0]
+
+            if hand_and_board_type in [HandType.FOUROFAKIND, HandType.FLUSH, HandType.STRAIGHTFLUSH, HandType.FULLHOUSE, HandType.STRAIGHT]:
+                raise_weight += 100
+                fold_weight -= 100
 
         # INITIAL CARDS
         if observation.stage == Stage.PREFLOP:
@@ -81,7 +91,8 @@ class MikkBot(BotInterface):
         elif opponent_last_action == Action.RAISE:
             # opponent raise, probably has good cards so fold
             fold_weight += 5
-        
+
+        # PREFLOP
         if i_start:
             if observation.stage == Stage.PREFLOP:
                 if initial_hand_percent > 0.2:

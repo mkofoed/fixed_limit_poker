@@ -45,5 +45,5 @@ def benchmark():
     print(stats)
 
 
-benchmark()
-#debug()
+#benchmark()
+debug()
