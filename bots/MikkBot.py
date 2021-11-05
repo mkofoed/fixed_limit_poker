@@ -67,42 +67,23 @@ class MikkBot(BotInterface):
             else:
                 fold_weight += 10
 
-
-
         # OPPONENT HISTORY
         opponent_actions_this_round = observation.get_opponent_history_current_stage()
+        # Get the last action the opponent have done
         opponent_last_action = opponent_actions_this_round[-1] if len(opponent_actions_this_round) > 0 else None
-        opponent_history = observation.get_opponent_history_current_stage()
-        opponent_raise_percent = 0
-        opponent_fold_percent = 0
-        opponent_check_call_percent = 0
-        if len(opponent_history) > 10:
-            opponent_raise_percent = opponent_history.count(Action.RAISE) / len(opponent_history)
-            opponent_fold_percent = opponent_history.count(Action.FOLD) / len(opponent_history)
-            opponent_check_call_percent = (opponent_history.count(Action.CALL) + opponent_history.count(
-                Action.CHECK)) / len(opponent_history)
 
-        if opponent_start:
-            if Stage.PREFLOP:
-                if opponent_last_action == Action.RAISE:
-                    if opponent_raise_percent > 0.8:
-                        raise_weight += 10
-                        call_check_weight += 10
-                    elif opponent_raise_percent > 0.2:
-                        raise_weight += 2
-                        call_check_weight += 2
-                    else:
-                        fold_weight += 10
-                if opponent_last_action == Action.FOLD:
-                    if opponent_fold_percent > 0.7:
-                        raise_weight += 10
-                    elif opponent_fold_percent > 0.5:
-                        raise_weight += 5
-                        call_check_weight += 5
-                    else:
-                        fold_weight += 10
+        if opponent_last_action is None:
+            # opponent didn't do anything yet for us to counter, just raise
+            raise_weight += 5
+        elif opponent_last_action in [Action.CHECK, Action.CALL]:
+            # opponent checked, try to steal the pot with a raise
+            raise_weight += 10
+        elif opponent_last_action == Action.RAISE:
+            # opponent raise, probably has good cards so fold
+            fold_weight += 5
+        
         if i_start:
-            if Stage.PREFLOP:
+            if observation.stage == Stage.PREFLOP:
                 if initial_hand_percent > 0.2:
                     fold_weight -= 1000000
                 else:
@@ -117,8 +98,8 @@ class MikkBot(BotInterface):
             call_check_weight += 5
             fold_weight -= 10
 
-        strait = utils.handValue.getLongestStraight(observation.myHand, observation.boardCards)
         # STRAIT
+        strait = utils.handValue.getLongestStraight(observation.myHand, observation.boardCards)
         if strait[0] == 5:
             return Action.RAISE
         if strait[0] == 4:
@@ -126,9 +107,13 @@ class MikkBot(BotInterface):
             call_check_weight += 5
             fold_weight -= 10
 
+        if raise_weight < 0:
+            raise_weight = 0
+        if call_check_weight < 0:
+            call_check_weight = 0
+        if fold_weight < 0:
+            fold_weight = 0
+
+        # GET ACTION
         choice = random.choices([Action.RAISE, Action.CALL, Action.FOLD], [raise_weight, call_check_weight, fold_weight], k=1)
-
-        if random.random() > 0.95:
-            return Action.RAISE
-
         return choice[0]
