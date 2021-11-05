@@ -27,14 +27,46 @@ class MikkBot(BotInterface):
             If this function takes longer than 1 second, your bot will fold
         """
 
+        raise_weight = 1
+        call_check_weight = 1
+        fold_weight = 1
 
+        initial_hand_percent = utils.handValue.getHandPercent(observation.myHand)[0]
         hand_type = utils.handValue.getHandType(observation.myHand)
         board_type = utils.handValue.getBoardHandType(observation.boardCards)
         hand_and_board_type = utils.handValue.getHandType(observation.myHand, observation.boardCards)
-        hand_percent = utils.handValue.getHandPercent(observation.myHand)
 
-        if hand_percent[0] > 0.8:
-            return Action.RAISE
-        if hand_percent[0] > 0.4:
-            return Action.CALL
-        return Action.FOLD
+        # INITIAL CARDS
+        if initial_hand_percent > 0.8:
+            raise_weight += 10
+        elif initial_hand_percent > 0.6:
+            raise_weight += 5
+            call_check_weight += 5
+        elif initial_hand_percent > 0.4:
+            call_check_weight += 5
+            fold_weight += 5
+        else:
+            fold_weight += 10
+
+        # OPPONENT HISTORY
+        opponent_history = observation.get_opponent_history_current_stage()
+        opponent_raise_percent = 0
+        opponent_fold_percent = 0
+        opponent_check_call_percent = 0
+        if len(opponent_history) > 10:
+            opponent_raise_percent = opponent_history.count(Action.RAISE) / len(opponent_history)
+            opponent_fold_percent = opponent_history.count(Action.FOLD) / len(opponent_history)
+            opponent_check_call_percent = (opponent_history.count(Action.CALL) + opponent_history.count(
+                Action.CHECK)) / len(opponent_history)
+
+        choice = random.choices([Action.RAISE, Action.CALL, Action.FOLD], [raise_weight, call_check_weight, fold_weight], k=1)
+
+        # CLOSE TO SUIT
+        #suits = utils.handValue.getHighestSuitCount(observation.myHand, observation.boardCards)
+        #if suits[0] == 5:
+        #    return Action.RAISE
+        #if suits[0] == 4:
+        #    return Action.RAISE
+
+        return choice[0]
+
