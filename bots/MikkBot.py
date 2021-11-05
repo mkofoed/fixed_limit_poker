@@ -4,7 +4,7 @@ from typing import Sequence
 
 import utils.handValue
 from bots.BotInterface import BotInterface
-from environment.Constants import Action
+from environment.Constants import Action, Stage
 from environment.Observation import Observation
 
 
@@ -37,21 +37,37 @@ class MikkBot(BotInterface):
         initial_hand_percent = 1 - utils.handValue.getHandPercent(observation.myHand)[0]
         hand_type = utils.handValue.getHandType(observation.myHand)
         board_type = utils.handValue.getBoardHandType(observation.boardCards)
-        hand_and_board_type = utils.handValue.getHandType(observation.myHand, observation.boardCards)
+        hand_and_board_percent = 1 - utils.handValue.getHandPercent(observation.myHand, observation.boardCards)[0]
 
         # INITIAL CARDS
-        if initial_hand_percent > 0.95:
-            raise_weight += 100
-        elif initial_hand_percent > 0.8:
-            raise_weight += 20
-        elif initial_hand_percent > 0.6:
-            raise_weight += 5
-            call_check_weight += 5
-        elif initial_hand_percent > 0.4:
-            call_check_weight += 5
-            fold_weight += 5
+        if observation.stage == Stage.PREFLOP:
+            if initial_hand_percent > 0.95:
+                raise_weight += 100
+            elif initial_hand_percent > 0.8:
+                raise_weight += 20
+            elif initial_hand_percent > 0.6:
+                raise_weight += 5
+                call_check_weight += 5
+            elif initial_hand_percent > 0.4:
+                call_check_weight += 5
+                fold_weight += 5
+            else:
+                fold_weight += 10
         else:
-            fold_weight += 10
+            if hand_and_board_percent > 0.95:
+                return Action.RAISE
+            elif hand_and_board_percent > 0.8:
+                raise_weight += 50
+            elif hand_and_board_percent > 0.6:
+                raise_weight += 5
+                call_check_weight += 5
+            elif hand_and_board_percent > 0.4:
+                call_check_weight += 5
+                fold_weight += 5
+            else:
+                fold_weight += 10
+
+
 
         # OPPONENT HISTORY
         opponent_actions_this_round = observation.get_opponent_history_current_stage()
@@ -67,7 +83,7 @@ class MikkBot(BotInterface):
                 Action.CHECK)) / len(opponent_history)
 
         if opponent_start:
-            if observation.stage.PREFLOP:
+            if Stage.PREFLOP:
                 if opponent_last_action == Action.RAISE:
                     if opponent_raise_percent > 0.8:
                         raise_weight += 10
@@ -86,8 +102,11 @@ class MikkBot(BotInterface):
                     else:
                         fold_weight += 10
         if i_start:
-            if observation.stage.PREFLOP:
-                fold_weight -= 1000000
+            if Stage.PREFLOP:
+                if initial_hand_percent > 0.2:
+                    fold_weight -= 1000000
+                else:
+                    fold_weight -= 100
 
         # SUIT
         suits = utils.handValue.getHighestSuitCount(observation.myHand, observation.boardCards)
@@ -107,12 +126,9 @@ class MikkBot(BotInterface):
             call_check_weight += 5
             fold_weight -= 10
 
-
-
         choice = random.choices([Action.RAISE, Action.CALL, Action.FOLD], [raise_weight, call_check_weight, fold_weight], k=1)
 
         if random.random() > 0.95:
             return Action.RAISE
 
         return choice[0]
-

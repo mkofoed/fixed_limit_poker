@@ -10,7 +10,7 @@ def debug():
     observers = [LoggingObserver()]
     env = FixedLimitPoker([
         # Change the bots here to change the participants
-        PercentBot(),
+        CounterBot(),
         MikkBot()
     ], observers=observers, punishSlowBots=False)
     env.reset()
@@ -45,5 +45,5 @@ def benchmark():
     print(stats)
 
 
-#benchmark()
-debug()
+benchmark()
+#debug()
