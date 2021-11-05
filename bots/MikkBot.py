@@ -34,7 +34,7 @@ class MikkBot(BotInterface):
         i_start = observation.myPosition == 0
         opponent_start = observation.myPosition == 1
 
-        initial_hand_percent = 1-utils.handValue.getHandPercent(observation.myHand)[0]
+        initial_hand_percent = 1 - utils.handValue.getHandPercent(observation.myHand)[0]
         hand_type = utils.handValue.getHandType(observation.myHand)
         board_type = utils.handValue.getBoardHandType(observation.boardCards)
         hand_and_board_type = utils.handValue.getHandType(observation.myHand, observation.boardCards)
@@ -85,24 +85,27 @@ class MikkBot(BotInterface):
                         call_check_weight += 5
                     else:
                         fold_weight += 10
+        if i_start:
+            if observation.stage.PREFLOP:
+                fold_weight -= 1000000
 
-            # SUIT
-            suits = utils.handValue.getHighestSuitCount(observation.myHand, observation.boardCards)
-            if suits[0] == 5:
-                return Action.RAISE
-            if suits[0] == 4:
-                raise_weight += 10
-                call_check_weight += 5
-                fold_weight -= 10
+        # SUIT
+        suits = utils.handValue.getHighestSuitCount(observation.myHand, observation.boardCards)
+        if suits[0] == 5:
+            return Action.RAISE
+        if suits[0] == 4:
+            raise_weight += 10
+            call_check_weight += 5
+            fold_weight -= 10
 
-            strait = utils.handValue.getLongestStraight(observation.myHand, observation.boardCards)
-            # STRAIT
-            if strait[0] == 5:
-                return Action.RAISE
-            if strait[0] == 4:
-                raise_weight += 10
-                call_check_weight += 5
-                fold_weight -= 10
+        strait = utils.handValue.getLongestStraight(observation.myHand, observation.boardCards)
+        # STRAIT
+        if strait[0] == 5:
+            return Action.RAISE
+        if strait[0] == 4:
+            raise_weight += 10
+            call_check_weight += 5
+            fold_weight -= 10
 
 
 
