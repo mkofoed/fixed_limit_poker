@@ -34,7 +34,7 @@ class MikkBot(BotInterface):
         i_start = observation.myPosition == 0
         opponent_start = observation.myPosition == 1
 
-        initial_hand_percent = utils.handValue.getHandPercent(observation.myHand)[0]
+        initial_hand_percent = 1-utils.handValue.getHandPercent(observation.myHand)[0]
         hand_type = utils.handValue.getHandType(observation.myHand)
         board_type = utils.handValue.getBoardHandType(observation.boardCards)
         hand_and_board_type = utils.handValue.getHandType(observation.myHand, observation.boardCards)
@@ -108,6 +108,8 @@ class MikkBot(BotInterface):
 
         choice = random.choices([Action.RAISE, Action.CALL, Action.FOLD], [raise_weight, call_check_weight, fold_weight], k=1)
 
+        if random.random() > 0.95:
+            return Action.RAISE
 
         return choice[0]
 
