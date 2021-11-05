@@ -1,3 +1,4 @@
+from bots.MikkBot import MikkBot
 from environment.observers.LoggingObserver import LoggingObserver
 from environment.FixedLimitPoker import FixedLimitPoker
 from bots import TemplateBot, CounterBot, PercentBot
@@ -10,7 +11,7 @@ def debug():
     env = FixedLimitPoker([
         # Change the bots here to change the participants
         PercentBot(),
-        TemplateBot()
+        MikkBot()
     ], observers=observers, punishSlowBots=False)
     env.reset()
     env.reset(rotatePlayers=True)
@@ -21,6 +22,7 @@ def benchmark():
         # Change the bots here to change the participants
         CounterBot(),
         PercentBot(),
+        MikkBot(),
         # TemplateBot(),
     ]
     combinations = list(itertools.combinations(bots, 2))
@@ -43,5 +45,5 @@ def benchmark():
     print(stats)
 
 
-# benchmark()
+#benchmark()
 debug()

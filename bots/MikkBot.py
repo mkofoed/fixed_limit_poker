@@ -33,8 +33,8 @@ class MikkBot(BotInterface):
         hand_and_board_type = utils.handValue.getHandType(observation.myHand, observation.boardCards)
         hand_percent = utils.handValue.getHandPercent(observation.myHand)
 
-        if hand_percent > 0.8:
+        if hand_percent[0] > 0.8:
             return Action.RAISE
-        if hand_percent > 0.4:
+        if hand_percent[0] > 0.4:
             return Action.CALL
         return Action.FOLD
